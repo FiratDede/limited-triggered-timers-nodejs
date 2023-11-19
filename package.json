@@ -1,6 +1,6 @@
 {
   "name": "limited-triggered-timers",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "This package allows users to create timers that trigger a certain number of times.",
   "main": "index.js",
   "scripts": {
