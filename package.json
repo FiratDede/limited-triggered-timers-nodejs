@@ -1,6 +1,6 @@
 {
   "name": "limited-triggered-timers",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "This package allows users to create timers that trigger a certain number of times.",
   "main": "index.js",
   "scripts": {
@@ -22,7 +22,6 @@
   "directories": {
     "test": "test"
   },
-  
   "repository": {
     "type": "git",
     "url": "git+https://github.com/FiratDede/limited-triggered-timers-nodejs.git"
