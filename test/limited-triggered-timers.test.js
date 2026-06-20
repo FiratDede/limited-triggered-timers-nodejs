@@ -1,89 +1,140 @@
-const chai = require('chai');
+const { describe, it, beforeEach, afterEach } = require('node:test');
+const assert = require('node:assert/strict');
 const sinon = require('sinon');
-const expect = chai.expect;
 
-
-const limitedTriggeredTimer = require('../index'); 
+const limitedTriggeredTimer = require('../dist');
 
 describe('Limited Triggered Timers package', () => {
-    it('should run limited triggered timers correctly.', () => {
-        let obj = { val: 0 }
+    let clock;
 
-        limitedTriggeredTimer.runLimitedTriggeredTimer(() => {
-            obj.val += 1
-
-        }, {
-            timeIntervalMs: 1000,
-            totalTriggerCount: 3, onFinished: () => {
-                /* When all triggers finished, obj.val should be equal to 3
-                because the timer triggers three times.
-                */
-                expect(obj.val).to.equal(3);
-
-            }
-        })
+    beforeEach(() => {
+        clock = sinon.useFakeTimers();
     });
 
-    it('should trigger the timers in specified trigger count.', () => {
+    afterEach(() => {
+        clock.restore();
+    });
+
+    it('should use default options when options are not provided.', () => {
         const exampleCallback = sinon.stub();
+
+        limitedTriggeredTimer.runLimitedTriggeredTimer(exampleCallback);
+
+        clock.tick(999);
+        assert.equal(exampleCallback.callCount, 0);
+
+        clock.tick(1);
+        assert.equal(exampleCallback.callCount, 1);
+
+        clock.tick(5000);
+        assert.equal(exampleCallback.callCount, 1);
+    });
+
+    it('should trigger the timer in the specified trigger count.', () => {
+        const exampleCallback = sinon.stub();
+        const onFinished = sinon.stub();
 
         limitedTriggeredTimer.runLimitedTriggeredTimer(exampleCallback, {
             timeIntervalMs: 1000,
             totalTriggerCount: 3,
-        })
+            onFinished,
+        });
 
-        setTimeout(() => {
-            // The exampleCallback should be called three times totally.
+        clock.tick(2999);
+        assert.equal(exampleCallback.callCount, 2);
+        assert.equal(onFinished.callCount, 0);
 
-            expect(exampleCallback.callCount).equal(3);
-        }, 6000)
+        clock.tick(1);
+        assert.equal(exampleCallback.callCount, 3);
+        assert.equal(onFinished.callCount, 1);
 
+        clock.tick(5000);
+        assert.equal(exampleCallback.callCount, 3);
+        assert.equal(onFinished.callCount, 1);
+    });
 
-
-
-    })
-    it('should trigger the timers in specified trigger count manually via next function.', () => {
+    it('should trigger the manual timer in the specified trigger count via next function.', () => {
         const exampleCallback = sinon.stub();
+        const onFinished = sinon.stub();
 
         limitedTriggeredTimer.runLimitedTriggeredTimerManually((next) => {
-            exampleCallback()
-            // Run the next trigger after specific time interval
-            next()
-
+            exampleCallback();
+            next();
         }, {
             timeIntervalMs: 1000,
             totalTriggerCount: 3,
-        })
+            onFinished,
+        });
 
-        setTimeout(() => {
-            // The exampleCallback should be called three times totally.
-            expect(exampleCallback.callCount).equal(3);
-        }, 6000)
+        clock.tick(3000);
 
+        assert.equal(exampleCallback.callCount, 3);
+        assert.equal(onFinished.callCount, 1);
+    });
 
-    })
-
-
-    it('should clear the timers early manually any time', () => {
+    it('should ignore duplicate next calls for the same manual trigger.', () => {
         const exampleCallback = sinon.stub();
+        const onFinished = sinon.stub();
 
-        let clearTimer = limitedTriggeredTimer.runLimitedTriggeredTimer(() => {
-            exampleCallback()
+        limitedTriggeredTimer.runLimitedTriggeredTimerManually((next) => {
+            exampleCallback();
+            next();
+            next();
+        }, {
+            timeIntervalMs: 1000,
+            totalTriggerCount: 3,
+            onFinished,
+        });
+
+        clock.tick(3000);
+        clock.tick(5000);
+
+        assert.equal(exampleCallback.callCount, 3);
+        assert.equal(onFinished.callCount, 1);
+    });
+
+    it('should clear the interval timer early.', () => {
+        const exampleCallback = sinon.stub();
+        const clearTimer = limitedTriggeredTimer.runLimitedTriggeredTimer(exampleCallback, {
+            timeIntervalMs: 1000,
+            totalTriggerCount: 4,
+        });
+
+        clock.tick(2500);
+        clearTimer();
+        clock.tick(5000);
+
+        assert.equal(exampleCallback.callCount, 2);
+    });
+
+    it('should clear the manual timer early.', () => {
+        const exampleCallback = sinon.stub();
+        const clearTimer = limitedTriggeredTimer.runLimitedTriggeredTimerManually((next) => {
+            exampleCallback();
+            next();
         }, {
             timeIntervalMs: 1000,
             totalTriggerCount: 4,
-        })
+        });
 
-        setTimeout(() => {
-            // The timer cleared in manually after three seconds
-            clearTimer()
-        }, 3000)
+        clock.tick(1000);
+        clearTimer();
+        clock.tick(5000);
 
-        setTimeout(()=>{
-            expect(exampleCallback.callCount).lessThan(5);
-        
-        },6000)
+        assert.equal(exampleCallback.callCount, 1);
+    });
 
-    })
+    it('should use default options for manual timers when options are not provided.', () => {
+        const exampleCallback = sinon.stub();
 
+        limitedTriggeredTimer.runLimitedTriggeredTimerManually((next) => {
+            exampleCallback();
+            next();
+        });
+
+        clock.tick(1000);
+        clock.tick(5000);
+
+        assert.equal(exampleCallback.callCount, 1);
+    });
 });

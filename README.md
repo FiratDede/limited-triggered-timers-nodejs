@@ -1,5 +1,6 @@
 # Limited Triggered Timers
 Limited Triggered Timers package allows users to create timers that trigger a certain number of times at most. For example, you can create a timer, which triggered every two seconds and it triggers 5 times at most, after the fifth trigger, the timer cleared.
+**NOTE:** This package benefit setTimeout and setInterval functions.
 ## Install
 ```sh
 npm install limited-triggered-timers
@@ -76,3 +77,50 @@ fs.open('example.txt', 'r', function (status, fd) {
 
 },)
 ```
+## API
+
+### `runLimitedTriggeredTimer(callback, options)`
+
+Runs a timer that automatically calls `callback` at a fixed interval. The timer stops after it reaches `options.totalTriggerCount`, unless `totalTriggerCount` is `-1`.
+
+#### Parameters
+
+- `callback`: Function called on every timer trigger.
+- `options`: Optional configuration object.
+
+#### Options
+
+- `timeIntervalMs`: Time between each trigger in milliseconds. Default is `1000`.
+- `totalTriggerCount`: Maximum number of times the callback will be triggered. Default is `1`. Use `-1` to run forever.
+- `onFinished`: Function called once after the timer reaches `totalTriggerCount`.
+
+#### Returns
+
+Returns a function that clears the timer when called.
+
+### `runLimitedTriggeredTimerManually(callback, options)`
+
+Runs a timer that waits for the callback to call `next()` before scheduling the next trigger. This is useful when each trigger contains asynchronous work and the next trigger should not start until that work is finished.
+
+#### Parameters
+
+- `callback`: Function called on every trigger. It receives a `next` function as its first argument.
+- `options`: Optional configuration object.
+
+#### Options
+
+- `timeIntervalMs`: Time to wait before each trigger in milliseconds. Default is `1000`.
+- `totalTriggerCount`: Maximum number of times the callback will be triggered. Default is `1`. Use `-1` to run forever.
+- `onFinished`: Function called once after the timer reaches `totalTriggerCount`.
+
+#### Returns
+
+Returns a function that clears the timer when called.
+
+## Releases
+### 1.2.0
+* First release, all features added
+### 2.0.0
+* Typescript support added.
+* Breaking change: **totalTriggerCount** option doesn't get default options when this value is smaller than 0 and not equal to -1. Instead, the user gets Error.
+* Breaking change: **timeIntervalMs** option doesn't get default options when these values smaller than 0. Instead, the user gets Error.
